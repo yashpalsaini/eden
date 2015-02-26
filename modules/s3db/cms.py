@@ -68,7 +68,6 @@ class S3ContentModel(S3Model):
              "cms_tag",
              "cms_tag_post",
              "cms_comment",
-             "cms_attachment"
              )
 
     def model(self):
@@ -190,9 +189,6 @@ class S3ContentModel(S3Model):
                            ),
                      # @ToDo: Move this to link table?
                      # - although this makes widget hard!
-                     self.gis_location_id(),
-                     # @ToDo: Move this to link table?
-                     # - although this makes widget hard!
                      self.pr_person_id(label = T("Contact"),
                                        # Enable only in certain conditions
                                        readable = False,
@@ -209,7 +205,9 @@ class S3ContentModel(S3Model):
                            represent = s3_yes_no_represent,
                            ),
                      s3_datetime(default = "now"),
-                     # @ToDo: Also have a datetime for 'Expires On'
+                     s3_datetime("expires_on",
+                           label = T("Expires on"),
+                           ),
                      Field("expired", "boolean",
                            default = False,
                            label = T("Expired?"),
@@ -258,6 +256,7 @@ class S3ContentModel(S3Model):
                        "body",
                        "location_id",
                        "date",
+                       "expires_on",
                        "expired",
                        "comments"
                        ]
@@ -397,6 +396,11 @@ class S3ContentModel(S3Model):
                                               "key": "incident_type_id",
                                               "actuate": "hide",
                                               },
+                        gis_location = {"link": "cms_post_location",
+                                       "joinby": "post_id",
+                                       "key": "location_id",
+                                       "actuate": "hide",
+                                       },                      
                        )
 
         # Custom Methods
@@ -542,29 +546,7 @@ class S3ContentModel(S3Model):
                                  "modified_on"
                                  ],
                   )
-        #---------------------------------------------------------------------
-        # Attachments
-        # - threaded attachments on Posts
-        #
-        tablename = "cms_attachment"
-        define_table(tablename,
-                     Field("attachments","upload",
-                           label = T("Attachments"),
-                           readable = False,
-                           ),
-                     post_id(empty=False),
-                     Field("body", "text", notnull=True,
-                           label = T("Comment"),
-                           ),
-                     *s3_meta_fields())
-        # Resource Configuration
-        configure(tablename,
-                  list_fields = ["id",
-                                 "post_id",
-                                 "created_by",
-                                 "modified_on"
-                                 ],
-                  )             
+        
         # ---------------------------------------------------------------------
         # Pass names back to global scope (s3.*)
         #
@@ -828,6 +810,74 @@ class S3ContentModel(S3Model):
         output = current.xml.json_message(True, 200, "Bookmark Removed")
         current.response.headers["Content-Type"] = "application/json"
         return output
+
+# =============================================================================
+class S3ContentLocationModel(S3Model):
+    """
+        Content Location Model
+    """
+
+    names = ("cms_post_location",)
+
+    def model(self):
+
+        T = current.T
+        # ---------------------------------------------------------------------
+        # Posts <> Locations Link Table
+        #
+        tablename = "cms_post_location"
+        self.define_table(tablename,
+                          self.cms_post_id(),
+                          self.gis_location_id(
+                            requires = IS_LOCATION(),
+                            #represent = self.gis_LocationRepresent(sep=", "),
+                            widget = S3LocationAutocompleteWidget()
+                          ),
+                          *s3_meta_fields()
+                          )
+
+        # CRUD Strings
+        current.response.s3.crud_strings[tablename] = Storage(
+            label_create = T("New Location"),
+            title_display = T("Location"),
+            title_list = T("Locations"),
+            title_update = T("Edit Location"),
+            title_upload = T("Import Location data"),
+            label_list_button = T("List Locations"),
+            msg_record_created = T("Location added to Post"),
+            msg_record_modified = T("Location updated"),
+            msg_record_deleted = T("Location removed from Post"),
+            msg_list_empty = T("No Locations found for this Post"))
+
+        self.configure(tablename,
+                       deduplicate=self.cms_post_location_deduplicate,
+                       )
+
+        # Pass names back to global scope (s3.*)
+        return dict()
+
+    # -------------------------------------------------------------------------
+    @staticmethod
+    def cms_post_location_deduplicate(item):
+        """ Import item de-duplication """
+
+        if item.tablename != "cms_post_location":
+            return
+
+        data = item.data
+        if "post_id" in data and \
+           "location_id" in data:
+            post_id = data.post_id
+            location_id = data.location_id
+            table = item.table
+            query = (table.post_id == post_id) & \
+                    (table.location_id == location_id)
+            duplicate = current.db(query).select(table.id,
+                                                 limitby=(0, 1)).first()
+
+            if duplicate:
+                item.id = duplicate.id
+                item.method = item.METHOD.UPDATE
 
 # =============================================================================
 class S3ContentMapModel(S3Model):
