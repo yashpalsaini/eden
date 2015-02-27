@@ -396,7 +396,7 @@ class S3ContentModel(S3Model):
                                               "key": "incident_type_id",
                                               "actuate": "hide",
                                               },
-                        gis_location = {"link": "cms_post_location",
+                       gis_location = {"link": "cms_post_location",
                                        "joinby": "post_id",
                                        "key": "location_id",
                                        "actuate": "hide",
@@ -830,19 +830,13 @@ class S3ContentLocationModel(S3Model):
                           self.cms_post_id(),
                           self.gis_location_id(
                             requires = IS_LOCATION(),
-                            #represent = self.gis_LocationRepresent(sep=", "),
                             widget = S3LocationAutocompleteWidget()
                           ),
-                          *s3_meta_fields()
-                          )
+                          *s3_meta_fields())
 
         # CRUD Strings
         current.response.s3.crud_strings[tablename] = Storage(
-            label_create = T("New Location"),
-            title_display = T("Location"),
-            title_list = T("Locations"),
-            title_update = T("Edit Location"),
-            title_upload = T("Import Location data"),
+            label_create = T("Add Location"),
             label_list_button = T("List Locations"),
             msg_record_created = T("Location added to Post"),
             msg_record_modified = T("Location updated"),
