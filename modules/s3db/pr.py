@@ -2545,42 +2545,40 @@ class S3PersonImageModel(S3Model):
             5:T("Document Scan"),
             9:T("other")
         }
-
         tablename = "pr_image"
-        self.define_table(tablename,
-                          # Component not Instance
-                          self.super_link("pe_id", "pr_pentity"),
-                          Field("profile", "boolean",
-                                default = False,
-                                label = T("Profile Picture?")
-                                ),
-                          Field("image", "upload", autodelete=True,
-                                represent = self.pr_image_represent,
-                                widget = S3ImageCropWidget((600, 600)),
-                                comment =  DIV(_class="tooltip",
-                                               _title="%s|%s" % (T("Image"),
-                                                                 T("Upload an image file here. If you don't upload an image file, then you must specify its location in the URL field.")))),
-                          Field("url",
-                                label = T("URL"),
-                                represent = pr_url_represent,
-                                comment = DIV(_class="tooltip",
-                                              _title="%s|%s" % (T("URL"),
-                                                                T("The URL of the image file. If you don't upload an image file, then you must specify its location here.")))),
-                          Field("type", "integer",
-                                requires = IS_IN_SET(pr_image_type_opts,
-                                                     zero=None),
-                                default = 1,
-                                label = T("Image Type"),
-                                represent = lambda opt: \
-                                            pr_image_type_opts.get(opt,
-                                               current.messages.UNKNOWN_OPT)),
-                          s3_comments("description",
-                                      label=T("Description"),
+        db = DAL(lazy_tables=True) 
+        db.define_table(tablename,
+                        self.super_link("pe_id", "pr_pentity"), 
+                        Field("profile", "boolean"),
+                        Field("image", "upload"),
+                        Field("url"),
+                        Field("type", "integer"),
+                        s3_comment("description"),
+                        *s3_meta_fields(),
+        on_define=lambda table: [
+             table.profile.set_attributes(default= False,
+                                          label = T("Profile Picture?")),
+             table.image.set_attributes(autodelete=True,
+                                        represent = self.pr_image_represent,
+                                        widget = S3ImageCropWidget((300, 300)),
+                                        comment =  DIV(_class="tooltip",
+                                                       _title="%s|%s" % (T("Image"),
+                                                                         T("Upload an image file here. If you don't upload an image file, then you must specify its location in the URL field.")))),
+             table.url.set_attributes(label = T("URL"),
+                                      represent = pr_url_represent,
                                       comment = DIV(_class="tooltip",
-                                                    _title="%s|%s" % (T("Description"),
-                                                                      T("Give a brief description of the image, e.g. what can be seen where on the picture (optional).")))),
-                          *s3_meta_fields())
-
+                                                    _title="%s|%s" % (T("URL"),
+                                                                      T("The URL of the image file. If you don't upload an image file, then you must specify its location here.")))),
+                                      
+             table.profile.set_attributes(requires = IS_IN_SET(pr_image_type_opts,
+                                                     zero=None),
+                                          default = 1,
+                                          label = T("Image Type"),
+                                          represent = lambda opt: \
+                                          pr_image_type_opts.get(opt,
+                                                                 current.messages.UNKNOWN_OPT)),
+             ])
+        
         # @todo: make lazy_table
         table = db[tablename]
 
