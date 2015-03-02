@@ -41,7 +41,7 @@ def series():
             _avatar = table.avatar
             _avatar.readable = _avatar.writable = False
             _avatar.default = r.record.avatar
-            _location = table.location_id
+            _location = cms_post_location.location_id
             if not r.record.location:
                 _location.readable = _location.writable = False
             _replies = table.replies
@@ -127,11 +127,11 @@ def post():
                         field.readable = field.writable = False
 
                 # Context from a Profile page?"
-                location_id = get_vars.get("(location)", None)
-                if location_id:
-                    field = table.location_id
-                    field.default = location_id
-                    field.readable = field.writable = False
+                #location_id = get_vars.get("(location)", None)
+                #if location_id:
+                    #field = table.location_id
+                    #field.default = location_id
+                    #field.readable = field.writable = False
 
                 page = get_vars.get("page", None)
                 if page:
@@ -149,8 +149,9 @@ def post():
                 _module = get_vars.get("module", None)
                 if _module:
                     table.avatar.readable = table.avatar.writable = False
-                    table.location_id.readable = table.location_id.writable = False
+                    #table.location_id.readable = table.location_id.writable = False
                     table.date.readable = table.date.writable = False
+                    table.expires_on.readable = table.date.writeable = False
                     table.expired.readable = table.expired.writable = False
                     # We always want the Rich Text widget here
                     table.body.widget = s3base.s3_richtext_widget
@@ -190,10 +191,11 @@ def post():
                     table.name.default = "Metadata Page for Layer %s" % layer_id
                     table.name.readable = table.name.writable = False
                     table.avatar.readable = table.avatar.writable = False
-                    table.location_id.readable = table.location_id.writable = False
+                    #table.location_id.readable = table.location_id.writable = False
                     table.title.readable = table.title.writable = False
                     table.replies.readable = table.replies.writable = False
                     table.date.readable = table.date.writable = False
+                    table.expires_on.readbale = table.expires_on.writable = False
                     table.expired.readable = table.expired.writable = False
                     _crud = s3.crud_strings[tablename]
                     _crud.label_create = T("Add Metadata")
@@ -358,7 +360,7 @@ def newsfeed():
                                    _class = "filter-search",
                                    #_placeholder = T("Search").upper(),
                                    ),
-                      S3LocationFilter("location_id",
+                      S3LocationFilter("cms_post_location.location_id",
                                        label = T("Filter by Location"),
                                        hidden = hidden,
                                        ),
@@ -416,7 +418,8 @@ def newsfeed():
                                    ))
 
     notify_fields = [(T("Date"), "date"),
-                     (T("Location"), "location_id"),
+                     (T("Expires on"), "expire_on"),
+                     (T("Location"), "cms_post_location.location_id"),
                      ]
 
     len_series = db(stable.deleted == False).count()
@@ -498,11 +501,11 @@ def newsfeed():
                 else:
                     field.readable = field.writable = False
 
-            if r.method == "read":
+            #if r.method == "read":
                 # Restore the label for the Location
-                table.location_id.label = T("Location")
-            elif r.method == "create":
-                pass
+                #table.location_id.label = T("Location")
+            #elif r.method == "create":
+                #pass
                 # @ToDo: deployment_setting
                 #ADMIN = session.s3.system_roles.ADMIN
                 #if (not auth.s3_has_role(ADMIN)):
@@ -541,9 +544,9 @@ def newsfeed():
 
             # Filter from a Profile page?
             # If so, then default the fields we know
-            location_id = get_vars.get("~.(location)", None)
-            if location_id:
-                table.location_id.default = location_id
+            #location_id = get_vars.get("~.(location)", None)
+            #if location_id:
+                #table.location_id.default = location_id
             event_id = get_vars.get("~.(event)", None)
             if event_id:
                 def create_onaccept(form):
@@ -562,7 +565,7 @@ def newsfeed():
             if settings.get_cms_show_tags():
                 cappend("title")
             crud_fields.extend(("body",
-                                "location_id",
+                                #"location_id",
                                 ))
             if not event_id and show_events:
                 cappend(S3SQLInlineComponent("event_post",
@@ -630,6 +633,7 @@ def newsfeed():
             utable.organisation_id.represent = s3db.org_organisation_represent
 
             list_fields = [(T("Date"), "date"),
+                           (T("Expires on"), "expires_on"),
                            #(T("Disaster"), "event_post.event_id"),
                            (T("Type"), "series_id"),
                            (T("Details"), "body"),

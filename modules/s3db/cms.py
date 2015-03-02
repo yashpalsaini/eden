@@ -255,7 +255,6 @@ class S3ContentModel(S3Model):
 
         list_fields = ["title",
                        "body",
-                       "location_id",
                        "date",
                        "expires_on",
                        "expired",
@@ -279,10 +278,10 @@ class S3ContentModel(S3Model):
                                           label = T("Type"),
                                           hidden = True,
                                           ),
-                          S3LocationFilter("location_id",
-                                           label = T("Location"),
-                                           hidden = True,
-                                           ),
+                          #S3LocationFilter("location_id",
+                                           #label = T("Location"),
+                                           #hidden = True,
+                                           #),
                           S3OptionsFilter("created_by$organisation_id",
                                           label = T("Organization"),
                                           # Can't use this for integers, use field.represent instead
@@ -845,8 +844,7 @@ class S3ContentLocationModel(S3Model):
             msg_list_empty = T("No Locations found for this Post"))
 
         self.configure(tablename,
-                       deduplicate=self.cms_post_location_deduplicate,
-                       )
+                       deduplicate=self.cms_post_location_deduplicate,)
 
         # Pass names back to global scope (s3.*)
         return dict()
@@ -1250,15 +1248,16 @@ def cms_customise_post_fields():
         #field.requires = IS_ADD_PERSON_WIDGET2()
         field.widget = S3AddPersonWidget2(controller="pr")
 
-    field = table.location_id
+    field = s3db.cms_post_location.location_id
     field.label = ""
     field.represent = s3db.gis_LocationRepresent(sep=" | ")
     # Required
     field.requires = IS_LOCATION()
 
     list_fields = ["series_id",
-                   "location_id",
+                   "cms_post_location.location_id",
                    "date",
+                   "expires_on",
                    ]
     lappend = list_fields.append
 
@@ -1398,7 +1397,10 @@ def cms_post_list_layout(list_id, item_id, resource, rfields, record):
     date = SPAN(date,
                 _class="date-title",
                 )
-
+    expires_on = record["cms_post.expires_on"]
+    expires_on = SPAN(expires_on,
+                _class="date-title",
+                ) 
     location_id = raw["cms_post.location_id"]
     if location_id:
         location = record["cms_post.location_id"]
@@ -1730,6 +1732,7 @@ def cms_post_list_layout(list_id, item_id, resource, rfields, record):
         header = DIV(card_label,
                      location,
                      date,
+                     expires_on,
                      toolbox,
                      _class="card-header",
                      )
